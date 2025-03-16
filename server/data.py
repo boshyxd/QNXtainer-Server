@@ -11,10 +11,19 @@ class Data:
         self.containers = dict()
 
     def add_image(self, image: Image):
+        self.images[f"{image.name}:{image.tag}"] = image
         self.images[image.id] = image
 
     def add_container(self, container: Container):
         self.containers[container.id] = container
+
+    def get_image_by_name(
+        self, image_name: str, image_tag: str = "latest"
+    ) -> Image | None:
+        return self.images.get(f"{image_name}:{image_tag}", None)
+
+    def get_image_by_id(self, image_id: str) -> Image | None:
+        return self.images.get(image_id, None)
 
     def to_json(self):
         """Convert data to a JSON-serializable dictionary"""

@@ -1,4 +1,5 @@
 import stat
+import resource
 import uuid
 import shutil
 import multiprocessing
@@ -61,15 +62,23 @@ class Container:
             container_runner.chmod(stat.S_IRWXU)
             self.runner = container_runner
         
+        self.status = "prepared"
         return container_id
 
     def _start(self):
-        subprocess.run(str(self.runner))
+        soft_mem_limit, hard_mem_limit = resource.getrlimit(resource.RLIMIT_AS)
+        soft_cpu_limit, hard_cpu_limit = resource.getrlimit(resource.RLIMIT_CPU)
+
+        resource.setrlimit(resource.RLIMIT_AS, (self.memory, hard_mem_limit))
+        resource.setrlimit(resource.RLIMIT_CPU, (self.cpu, hard_cpu_limit))
+        subprocess.run(self.runner.as_posix())
 
     def start(self):
         mp_context = multiprocessing.get_context("spawn")
         self.process = mp_context.Process(target=self._start)
         self.process.start()
+        self.status = "running"
+        print(self.id, self.status)
 
     def stop(self):
         if self.process and self.process.is_alive():
@@ -77,3 +86,6 @@ class Container:
         
         if self.container_dir and self.container_dir.exists():
             shutil.rmtree(self.container_dir)
+        
+        self.status = "stopped"
+        print(self.id, self.status)
