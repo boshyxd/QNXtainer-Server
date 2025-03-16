@@ -16,6 +16,7 @@ PORT = 8080
 
 state = Data()
 
+
 def upload_image(image_file: Path, image_name: str, image_tag: str = "latest"):
     if not os.path.isfile(image_file):
         print(f"Warning: Image file {image_file} does not exist. Skipping.")
@@ -151,8 +152,10 @@ class RequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         content_length = int(self.headers.get("Content-Length", 0))
-        form = cgi.FieldStorage(fp=self.rfile, headers=self.headers, environ={"REQUEST_METHOD": "POST"})
-        
+        form = cgi.FieldStorage(
+            fp=self.rfile, headers=self.headers, environ={"REQUEST_METHOD": "POST"}
+        )
+
         if self.path == "/upload-image":
             content_type = self.headers.get("Content-Type")
             if not content_type or "multipart/form-data" not in content_type:
@@ -168,7 +171,9 @@ class RequestHandler(BaseHTTPRequestHandler):
                 tag = str(uuid.uuid4())
             file_item = form["file"]
             if file_item.filename.endswith(".tar.gz."):
-                self.send_error(400, f"Only .tar.gz files are allowed. Now {file_item.filename}")
+                self.send_error(
+                    400, f"Only .tar.gz files are allowed. Now {file_item.filename}"
+                )
                 return
 
             tmp_dir = Path.home() / "server" / "tmp"
@@ -179,12 +184,16 @@ class RequestHandler(BaseHTTPRequestHandler):
                 output_file.write(file_item.file.read())
             print(f"File saved: {file_path}")
 
-            upload_image(file_path, name,  tag)
+            upload_image(file_path, name, tag)
 
             os.remove(file_path)
             print(f"File deleted: {file_path}")
 
-            response_data = {"status": "uploaded", "filename": f"{name}.tar.gz", "path": str(file_path)}
+            response_data = {
+                "status": "uploaded",
+                "filename": f"{name}.tar.gz",
+                "path": str(file_path),
+            }
             self.send_response(200)
             self.send_header("Content-type", "application/json")
             self.send_cors_headers()

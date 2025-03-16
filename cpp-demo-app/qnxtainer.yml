@@ -1,0 +1,7 @@
+name: cpp-demo-app
+cmd: ./cpp-demo-app.d
+build: make qnx_arm
+env:
+  DATA_DIR: data
+mounts:
+  - "../cpp-demo-app-include/data.json:data/data.json"

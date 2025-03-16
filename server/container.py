@@ -1,4 +1,5 @@
 import os
+import logging
 import stat
 import shlex
 import resource
@@ -68,6 +69,10 @@ class Container:
         return container_id
 
     def _start(self):
+        process_id = os.getpid()
+        logging.basicConfig(level=logging.INFO)
+        logger = logging.getLogger(f"{self.id}-{process_id}")
+        logger.info(f"This is a log message from process {process_id}")
         soft_mem_limit, hard_mem_limit = resource.getrlimit(resource.RLIMIT_AS)
         soft_cpu_limit, hard_cpu_limit = resource.getrlimit(resource.RLIMIT_CPU)
 
@@ -78,9 +83,22 @@ class Container:
 
         os.chdir(self.container_dir)
 
-        subprocess.run(shlex.split(self.runner.as_posix()))
+        process = subprocess.Popen(
+            shlex.split(self.runner.as_posix()),
+            shell=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        while True:
+            output = process.stdout.readline()
+            if process.poll() is not None:
+                break
+            if output:
+                logger.info(output.decode().strip())
+        process.poll()
 
     def start(self):
+        read_fd, write_fd = os.pipe()
         mp_context = multiprocessing.get_context("spawn")
         self.process = mp_context.Process(target=self._start)
         self.process.start()
@@ -99,4 +117,3 @@ class Container:
 
         self.status = "stopped"
         print(f"Container {self.id} stopped")
-
