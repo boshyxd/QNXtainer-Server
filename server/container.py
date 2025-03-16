@@ -12,9 +12,11 @@ class Container:
         self.status = status
         self.cpu = cpu
         self.memory = memory
-        self.image_id = None
+        self.image = None
         self.id = None
         self.process = None
+        self.container_dir = None
+        self.runner = None
 
     def to_dict(self):
         return {"status": self.status, "cpu": self.cpu, "memory": self.memory}
@@ -23,21 +25,20 @@ class Container:
         return f"Container(status={self.status}, cpu={self.cpu}, memory={self.memory})"
 
     def prepare(self, container_image: Image) -> str:
-        image_dir = container_image.get_image_dir()
+        image_dir = container_image.get_image_dir() / "image"
         containers_dir = Path().home() / ".qnxtainer" / "containers"
         container_id = uuid.uuid4().hex
         self.id = container_id
-        self.image_id = container_image.id
-        container_dir = containers_dir / container_id
-        shutil.copytree(image_dir, container_dir)
-        container_runner = container_dir / "run.sh"
+        self.image = container_image
+        self.container_dir = containers_dir / container_id
+        shutil.copytree(image_dir, self.container_dir)
+        container_runner = self.container_dir / "run.sh"
         container_runner.chmod(stat.S_IRWXU)
         self.runner = container_runner
         return container_id
 
     def _start(self):
-        subprocess.run()
-        pass
+        subprocess.run(str(self.runner))
 
     def start(self):
         mp_context = multiprocessing.get_context("spawn")
@@ -45,4 +46,5 @@ class Container:
         self.process.start()
 
     def stop(self):
-        pass
+        self.process.terminate()
+        shutil.rmtree(self.container_dir)

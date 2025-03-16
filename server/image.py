@@ -24,7 +24,7 @@ class Image:
 
     def get_image_dir(self) -> Path:
         images_dir = Path().home() / ".qnxtainer" / "images"
-        image_dir = images_dir / self.image_name / self.image_tag
+        image_dir = images_dir / self.name / self.tag
         return image_dir
 
     def unpack_from(self, image_file_name: Path) -> Path:
