@@ -2,6 +2,8 @@ import json
 import time
 from pathlib import Path
 import re
+import os
+import uuid
 import cgi
 
 from image import Image
@@ -15,7 +17,7 @@ PORT = 8080
 state = Data()
 
 def upload_image(image_file: Path, image_name: str, image_tag: str = "latest"):
-    if not image_file.exists():
+    if not os.path.isfile(image_file):
         print(f"Warning: Image file {image_file} does not exist. Skipping.")
         return
 
@@ -73,7 +75,7 @@ def stop_container(container_id: str):
         print(f"container {container_id} is already stopped")
         return
 
-    if hasattr(target_container, "process") and container.process:
+    if hasattr(target_container, "process") and target_container.process:
         target_container.stop()
 
     target_container.status = "stopped"
@@ -141,16 +143,7 @@ class RequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         content_length = int(self.headers.get("Content-Length", 0))
-        post_data = self.rfile.read(content_length)
-
-        try:
-            if content_length > 0:
-                post_json = json.loads(post_data)
-            else:
-                post_json = {}
-        except json.JSONDecodeError:
-            post_json = {}
-
+    
         if self.path == "/upload-image":
             content_type = self.headers.get("Content-Type")
             if not content_type or "multipart/form-data" not in content_type:
@@ -162,6 +155,9 @@ class RequestHandler(BaseHTTPRequestHandler):
             if not name:
                 self.send_error(400, "Missing 'name' parameter")
                 return
+            tag = form.getvalue("tag")
+            if not tag:
+                tag = str(uuid.uuid4())
             file_item = form["file"]
             if file_item.filename.endswith(".tar.gz."):
                 self.send_error(400, f"Only .tar.gz files are allowed. Now {file_item.filename}")
@@ -173,8 +169,12 @@ class RequestHandler(BaseHTTPRequestHandler):
             file_path = tmp_dir / f"{name}.tar.gz"
             with open(file_path, "wb") as output_file:
                 output_file.write(file_item.file.read())
-
             print(f"File saved: {file_path}")
+
+            upload_image(file_path, name,  tag)
+
+            os.remove(file_path)
+            print(f"File deleted: {file_path}")
 
             response_data = {"status": "uploaded", "filename": f"{name}.tar.gz", "path": str(file_path)}
             self.send_response(200)
@@ -183,7 +183,9 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps(response_data).encode())
 
         elif self.path == "/create-container":
-            if "image_id" not in post_json or "name" not in post_json:
+            form = cgi.FieldStorage(fp=self.rfile, headers=self.headers, environ={"REQUEST_METHOD": "POST"})
+            print(form)
+            if not form.getvalue("image_id") or not form.getvalue("name"):
                 self.send_response(400)
                 self.send_header("Content-type", "application/json")
                 self.send_cors_headers()
@@ -195,7 +197,7 @@ class RequestHandler(BaseHTTPRequestHandler):
 
             try:
                 container_id = create_container(
-                    post_json["image_id"], post_json["name"]
+                    form.getvalue("image_id"), form.getvalue("name")
                 )
                 response_data = {"status": "created", "container_id": container_id}
             except ValueError as e:
