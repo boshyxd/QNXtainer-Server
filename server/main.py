@@ -179,6 +179,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             response_data = {"status": "uploaded", "filename": f"{name}.tar.gz", "path": str(file_path)}
             self.send_response(200)
             self.send_header("Content-type", "application/json")
+            self.send_cors_headers()
             self.end_headers()
             self.wfile.write(json.dumps(response_data).encode())
 
