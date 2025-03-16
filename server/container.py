@@ -59,7 +59,10 @@ class Container:
                 f.write("#!/bin/sh\necho 'Mock container running'\nsleep 60\n")
             mock_runner.chmod(stat.S_IRWXU)
             self.runner = mock_runner
+            logging.info("Uhhhhhhhhhh this should not happen")
         else:
+            logging.info(image_dir)
+            logging.info(self.container_dir)
             shutil.copytree(image_dir, self.container_dir)
             container_runner = self.container_dir / "run.sh"
             container_runner.chmod(stat.S_IRWXU)
@@ -83,8 +86,10 @@ class Container:
 
         os.chdir(self.container_dir)
 
+        command = ["sh", *shlex.split(self.runner.as_posix())]
+        logger.info(command)
         process = subprocess.Popen(
-            shlex.split(self.runner.as_posix()),
+            command,
             shell=False,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,

@@ -1,3 +1,4 @@
+import logging
 import tarfile
 import os
 from datetime import datetime
@@ -10,6 +11,7 @@ class Image:
     Image class for QNXtainer.
     Represents a container image with name, tag, and associated files.
     """
+
     def __init__(self, name: str, tag: str, created_at: datetime = datetime.now()):
         self.name = name
         self.tag = tag
@@ -39,19 +41,21 @@ class Image:
         """Unpack a tarball into the image directory"""
         image_dir = self.get_image_dir()
         image_dir.mkdir(parents=True, exist_ok=True)
-        
+
         try:
             with tarfile.open(image_file_name) as tar:
                 tar.extractall(image_dir)
-                
+                logging.info(os.listdir(image_dir))
+
                 run_script = image_dir / "image" / "run.sh"
                 if run_script.exists():
                     os.chmod(run_script, 0o755)
-                    
+
             return image_dir
         except Exception as e:
             print(f"Error unpacking image: {e}")
             if image_dir.exists():
                 import shutil
+
                 shutil.rmtree(image_dir)
             raise

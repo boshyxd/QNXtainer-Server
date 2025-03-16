@@ -1,4 +1,5 @@
 import json
+import logging
 import time
 from pathlib import Path
 import re
@@ -16,6 +17,9 @@ PORT = 8080
 
 state = Data()
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 def upload_image(image_file: Path, image_name: str, image_tag: str = "latest"):
     if not os.path.isfile(image_file):
@@ -28,13 +32,15 @@ def upload_image(image_file: Path, image_name: str, image_tag: str = "latest"):
     print(f"Added image: {image_name}:{image_tag}")
 
 
-def start_container_from_image(image_id: str) -> str:
+def start_container_from_image(
+    image_id: str, cpu: float = 5, memory: float = 64
+) -> str:
     """Start a container from an image"""
     image = state.get_image_by_id(image_id)
     if image is None:
         raise ValueError(f"Image with ID {image_id} not found")
 
-    container = Container(status="running", cpu=5, memory=64)
+    container = Container(status="running", cpu=cpu, memory=memory)
     container_id = container.prepare(image)
     container.start()
 
@@ -168,7 +174,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 return
             tag = form.getvalue("tag")
             if not tag:
-                tag = str(uuid.uuid4())
+                tag = uuid.uuid4().hex
             file_item = form["file"]
             if file_item.filename.endswith(".tar.gz."):
                 self.send_error(
@@ -183,9 +189,11 @@ class RequestHandler(BaseHTTPRequestHandler):
             with open(file_path, "wb") as output_file:
                 output_file.write(file_item.file.read())
             print(f"File saved: {file_path}")
+            logger.info("File saved, processing.")
 
             upload_image(file_path, name, tag)
 
+            logger.info("Image processed.")
             os.remove(file_path)
             print(f"File deleted: {file_path}")
 
@@ -225,6 +233,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         elif re.match(r"^/start/([\w-]+)$", self.path):
             container_id = self.path.split("/")[-1]
             try:
+                logger.info("Attempting to start container %s", container_id)
                 start_container(container_id)
                 response_data = {"status": "started", "container_id": container_id}
             except ValueError as e:
