@@ -6,6 +6,7 @@ import re
 import os
 import uuid
 import cgi
+from socketserver import ThreadingMixIn
 
 from image import Image
 from data import Data
@@ -259,7 +260,11 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(response_json)
 
 
-def run(server_class=HTTPServer, handler_class=RequestHandler):
+class ThreadedSimpleServer(ThreadingMixIn, HTTPServer):
+    pass
+
+
+def run(server_class=ThreadedSimpleServer, handler_class=RequestHandler):
     server_address = ("", PORT)
     httpd = server_class(server_address, handler_class)
     print(f"QNXtainer Server running at http://0.0.0.0:{PORT}")
