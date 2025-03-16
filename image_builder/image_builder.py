@@ -32,8 +32,10 @@ def make_runner(image_build_dir: Path, run_command: str):
         open(image_build_dir / "run.sh", "w+") as runner_file,
         open(env_file_path) as env_file,
     ):
-        env_file_data = " \\\n\t".join([*env_file.readlines(), run_command])
-        runner_file.write(env_file_data)
+        shebang = "#!/bin/sh\n"
+        script_data = " \\\n\t".join([*env_file.readlines(), run_command])
+        runner_file.write(shebang)
+        runner_file.write(script_data)
 
 
 def make_env(image_build_dir: Path, env: dict[str, str]):

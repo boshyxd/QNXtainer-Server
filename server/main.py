@@ -1,4 +1,5 @@
 import json
+import time
 from pathlib import Path
 import re
 
@@ -242,6 +243,10 @@ if __name__ == "__main__":
     mock_image_path = Path().home() / ".qnxtainer" / "images" / "mock-app.tar.gz"
     if mock_image_path.exists():
         upload_image(mock_image_path, "mock-app")
+        image = state.get_image_by_name("mock-app")
+        container_id = start_container_from_image(image.id)
+        time.sleep(1)
+        stop_container(container_id)
     else:
         print(f"Mock image not found at {mock_image_path}. Starting with empty state.")
         mock_image = Image("mock-app", "latest")

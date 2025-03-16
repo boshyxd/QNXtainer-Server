@@ -1,4 +1,6 @@
+import os
 import stat
+import shlex
 import resource
 import uuid
 import shutil
@@ -26,16 +28,16 @@ class Container:
             image_info = {
                 "id": self.image.id,
                 "name": self.image.name,
-                "tag": self.image.tag
+                "tag": self.image.tag,
             }
-        
+
         return {
             "id": self.id,
             "name": self.name or self.id,
-            "status": self.status, 
-            "cpu": self.cpu, 
+            "status": self.status,
+            "cpu": self.cpu,
             "memory": self.memory,
-            "image": image_info
+            "image": image_info,
         }
 
     def __repr__(self):
@@ -48,11 +50,11 @@ class Container:
         self.id = container_id
         self.image = container_image
         self.container_dir = containers_dir / container_id
-        
+
         if not image_dir.exists():
             self.container_dir.mkdir(parents=True, exist_ok=True)
             mock_runner = self.container_dir / "run.sh"
-            with open(mock_runner, 'w') as f:
+            with open(mock_runner, "w") as f:
                 f.write("#!/bin/sh\necho 'Mock container running'\nsleep 60\n")
             mock_runner.chmod(stat.S_IRWXU)
             self.runner = mock_runner
@@ -61,7 +63,7 @@ class Container:
             container_runner = self.container_dir / "run.sh"
             container_runner.chmod(stat.S_IRWXU)
             self.runner = container_runner
-        
+
         self.status = "prepared"
         return container_id
 
@@ -69,10 +71,14 @@ class Container:
         soft_mem_limit, hard_mem_limit = resource.getrlimit(resource.RLIMIT_AS)
         soft_cpu_limit, hard_cpu_limit = resource.getrlimit(resource.RLIMIT_CPU)
 
-        resource.setrlimit(resource.RLIMIT_AS, (self.memory * 1024 * 1024, hard_mem_limit))
+        resource.setrlimit(
+            resource.RLIMIT_AS, (self.memory * 1024 * 1024, hard_mem_limit)
+        )
         resource.setrlimit(resource.RLIMIT_CPU, (self.cpu, hard_cpu_limit))
-        
-        subprocess.run(self.runner.as_posix())
+
+        os.chdir(self.container_dir)
+
+        subprocess.run(shlex.split(self.runner.as_posix()))
 
     def start(self):
         mp_context = multiprocessing.get_context("spawn")
@@ -87,9 +93,10 @@ class Container:
             self.process.join(timeout=5)
             if self.process.is_alive():
                 self.process.kill()
-        
+
         if self.container_dir and self.container_dir.exists():
             shutil.rmtree(self.container_dir)
-        
+
         self.status = "stopped"
         print(f"Container {self.id} stopped")
+
