@@ -53,9 +53,9 @@ def start_container(container_id: str) -> str:
         print(f"Container {container_id} is already running")
         return container_id
 
-    container.status = "running"
-    container.cpu = 5
-    container.memory = 64
+    target_container.status = "running"
+    target_container.cpu = 5
+    target_container.memory = 64
 
     if hasattr(target_container, "runner") and target_container.runner:
         target_container.start()
@@ -213,11 +213,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 container_id = start_container_from_image(image_id)
                 response_data = {"status": "started", "container_id": container_id}
             except ValueError as e:
-                self.send_response(400)
-                self.send_header("Content-type", "application/json")
-                self.send_cors_headers()
-                self.end_headers()
-                self.wfile.write(json.dumps({"error": str(e)}).encode())
+                self.send_error(400, str(e))
                 return
         elif re.match(r"^/start/([\w-]+)$", self.path):
             container_id = self.path.split("/")[-1]
