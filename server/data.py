@@ -17,12 +17,11 @@ class Data:
         self.containers[container.id] = container
 
     def to_json(self):
-        return json.dumps(
-            {
-                "images": [img.to_dict() for img in self.images],
-                "containers": [ctr.to_dict() for ctr in self.containers],
-            }
-        )
+        """Convert data to a JSON-serializable dictionary"""
+        return {
+            "images": [img.to_dict() for img in self.images.values()],
+            "containers": [ctr.to_dict() for ctr in self.containers.values()],
+        }
 
     def __repr__(self):
         return f"Data(images={self.images}, containers={self.containers})"
