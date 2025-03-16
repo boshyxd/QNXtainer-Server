@@ -27,11 +27,7 @@ def stop_container(container_id: str):
 
 class RequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
-<<<<<<< Updated upstream
         if self.path == "/state":
-=======
-        if self.path == "/state" or self.path == "/":
->>>>>>> Stashed changes
             response_json = json.dumps(state.to_json()).encode()
             self.send_response(200)
             self.send_header("Content-type", "application/json")
