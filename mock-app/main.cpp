@@ -1,4 +1,7 @@
 #include <cstdlib>
 #include <iostream>
 
-int main() { std::cout << std::getenv("DATA_DIR") << std::endl; }
+int main() {
+  if (const char *data_dir = std::getenv("DATA_DIR"))
+    std::cout << "Your DATA_DIR is: " << data_dir << '\n';
+}
