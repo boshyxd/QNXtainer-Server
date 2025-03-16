@@ -44,7 +44,7 @@ def start_container_from_image(image_id: str) -> str:
     return container_id
 
 
-def start_container(container_id: str) -> str:
+def start_container(container_id: str, cpu: float = 5, memory: float = 64) -> str:
     """Start an existing container by ID"""
     target_container = state.get_container_by_id(container_id)
     if target_container is None:
@@ -55,8 +55,8 @@ def start_container(container_id: str) -> str:
         return container_id
 
     target_container.status = "running"
-    target_container.cpu = 5
-    target_container.memory = 64
+    target_container.cpu = cpu
+    target_container.memory = memory
 
     if hasattr(target_container, "runner") and target_container.runner:
         target_container.start()
