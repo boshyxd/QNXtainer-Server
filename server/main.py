@@ -28,13 +28,8 @@ def upload_image(image_file: Path, image_name: str, image_tag: str = "latest"):
 
 def start_container_from_image(image_id: str) -> str:
     """Start a container from an image"""
-    image = None
-    for img_id, img in state.images.items():
-        if img_id == image_id:
-            image = img
-            break
-    
-    if not image:
+    image = state.get_image_by_id(image_id)    
+    if image is None:
         raise ValueError(f"Image with ID {image_id} not found")
     
     container = Container(status="running", cpu=5, memory=64)
@@ -49,12 +44,11 @@ def start_container_from_image(image_id: str) -> str:
 
 def start_container(container_id: str) -> str:
     """Start an existing container by ID"""
-    if container_id not in state.containers:
+    target_container = state.get_container_by_id(container_id)
+    if target_container is None:
         raise ValueError(f"Container with ID {container_id} not found")
     
-    container = state.containers[container_id]
-    
-    if container.status == "running":
+    if target_container.status == "running":
         print(f"Container {container_id} is already running")
         return container_id
     
@@ -62,8 +56,10 @@ def start_container(container_id: str) -> str:
     container.cpu = 5
     container.memory = 64
     
-    if hasattr(container, 'runner') and container.runner:
-        container.start()
+    if hasattr(target_container, 'runner') and target_container.runner:
+        target_container.start()
+    else:
+        print(f"Container {container_id} has no runner. Aborting.")
     
     print(f"Started container {container_id}")
     return container_id
@@ -71,40 +67,31 @@ def start_container(container_id: str) -> str:
 
 def stop_container(container_id: str):
     """Stop a running container"""
-    if container_id not in state.containers:
-        raise ValueError(f"Container with ID {container_id} not found")
-    
-    container = state.containers[container_id]
-    
-    if container.status == "stopped":
-        print(f"Container {container_id} is already stopped")
+    target_container = state.get_container_by_id(container_id)
+    if target_container is None:
+        raise ValueError(f"Container with ID {container_id} not found")    
+    if target_container.status == "stopped":
+        print(f"container {container_id} is already stopped")
         return
     
-    if hasattr(container, 'process') and container.process:
-        container.stop()
+    if hasattr(target_container, 'process') and container.process:
+        target_container.stop()
     
-    container.status = "stopped"
-    container.cpu = 0
-    container.memory = 0
+    target_container.status = "stopped"
+    target_container.cpu = 0
+    target_container.memory = 0
     
     print(f"Stopped container {container_id}")
 
 
 def create_container(image_id: str, name: str) -> str:
     """Create a new container from an image"""
-    image = None
-    for img_id, img in state.images.items():
-        if img_id == image_id:
-            image = img
-            break
-    
-    if not image:
+    target_image = state.get_image_by_id(image_id)
+    if target_image is None:
         raise ValueError(f"Image with ID {image_id} not found")
     
     container = Container(status="stopped", cpu=0, memory=0)
-    container.name = name
-    container.image = image
-    container.id = f"container-{len(state.containers) + 1}"
+    container.prepare(target_image)
     
     state.add_container(container)
     print(f"Created container {container.id} from image {image.name}:{image.tag}")
@@ -145,12 +132,12 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_cors_headers()
         self.end_headers()
-    
+
     def send_cors_headers(self):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
-    
+
     def do_GET(self):
         if self.path == "/state":
             response_json = json.dumps(state.to_json()).encode()
@@ -271,6 +258,7 @@ def run(server_class=HTTPServer, handler_class=RequestHandler, port=PORT):
 
 
 if __name__ == "__main__":
+<<<<<<< HEAD
     ensure_directories()
     
     mock_image_path = Path().home() / ".qnxtainer" / "images" / "mock-app.tar.gz"
@@ -283,3 +271,9 @@ if __name__ == "__main__":
         print("Added mock image to state.")
     
     run()
+=======
+    new_image = upload_image(
+        Path().home() / ".qnxtainer" / "images" / "mock-app.tar.gz", "mock-app"
+    )
+    run()
+>>>>>>> 53dbcf2 (fleshing out start and stop commands)

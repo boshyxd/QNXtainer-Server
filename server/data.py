@@ -21,6 +21,9 @@ class Data:
     def get_image_by_id(self, image_id: str) -> Image | None:
         return self.images.get(image_id, None)
 
+    def get_container_by_id(self, container_id: str) -> Container | None:
+        return self.containers.get(container_id, None)
+
     def to_json(self):
         """Convert data to a JSON-serializable dictionary"""
         unique_images = {img.id: img for img in self.images.values()}.values()

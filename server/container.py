@@ -9,7 +9,7 @@ from image import Image
 
 
 class Container:
-    def __init__(self, status: str, cpu: float, memory: int):
+    def __init__(self, status: str, cpu: float = -1, memory: int = -1):
         self.status = status
         self.cpu = cpu
         self.memory = memory
