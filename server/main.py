@@ -26,16 +26,30 @@ def stop_container(container_id: str):
 
 
 class RequestHandler(BaseHTTPRequestHandler):
+    def do_OPTIONS(self):
+        """Handle preflight CORS requests"""
+        self.send_response(200)
+        self.send_cors_headers()
+        self.end_headers()
+    
+    def send_cors_headers(self):
+        """Add CORS headers to allow cross-origin requests"""
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+    
     def do_GET(self):
         if self.path == "/state":
             response_json = json.dumps(state.to_json()).encode()
             self.send_response(200)
             self.send_header("Content-type", "application/json")
+            self.send_cors_headers()
             self.end_headers()
             self.wfile.write(response_json)
             return
         self.send_response(404)
         self.send_header("Content-type", "application/json")
+        self.send_cors_headers()
         self.end_headers()
         self.wfile.write(json.dumps({"error": "Not Found"}).encode())
 
@@ -53,6 +67,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         else:
             self.send_response(404)
             self.send_header("Content-type", "application/json")
+            self.send_cors_headers()
             self.end_headers()
             self.wfile.write(json.dumps({"error": "Invalid path"}).encode())
             return
@@ -60,6 +75,7 @@ class RequestHandler(BaseHTTPRequestHandler):
 
         self.send_response(200)
         self.send_header("Content-type", "application/json")
+        self.send_cors_headers()
         self.end_headers()
         self.wfile.write(response_json)
 
@@ -67,7 +83,7 @@ class RequestHandler(BaseHTTPRequestHandler):
 def run(server_class=HTTPServer, handler_class=RequestHandler):
     server_address = ("", PORT)
     httpd = server_class(server_address, handler_class)
-    print(f"http://0.0.0.0:{PORT}")
+    print(f"QNXtainer Server running at http://0.0.0.0:{PORT}")
     httpd.serve_forever()
 
 
