@@ -1,16 +1,33 @@
 import json
 import re
+from datetime import datetime
+
+from image import Image
+from data import Data
+from container import Container
+
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 PORT = 8080
-MOCK_RESPONSE = {"message": "Hello, this is a GET response!"}
+
+cont = Container("Running", 0.2, 25)
+im = Image("x","y",datetime.today(), "z")
+MOCK_RESPONSE = Data(containers=[cont], images=[im])
+
+
+def upload_image():
+    pass
+def start_container(image_id):
+    pass
+def stop_container(image_id):
+    pass
 
 
 class RequestHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/state" or self.path == "/":
-            response_json = json.dumps(MOCK_RESPONSE).encode()
+            response_json = json.dumps(MOCK_RESPONSE.to_json()).encode()
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
