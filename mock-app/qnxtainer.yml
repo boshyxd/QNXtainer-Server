@@ -1,0 +1,7 @@
+name: mock-app
+cmd: ./mock-app.d
+build: make
+env:
+  DATA_DIR: data
+mounts:
+  - "../mock-app-include/data.json:data/data.json"
