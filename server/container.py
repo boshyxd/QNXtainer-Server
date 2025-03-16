@@ -1,4 +1,5 @@
 import stat
+import resource
 import uuid
 import shutil
 import multiprocessing
@@ -19,7 +20,13 @@ class Container:
         self.runner = None
 
     def to_dict(self):
-        return {"status": self.status, "cpu": self.cpu, "memory": self.memory}
+        return {
+            "status": self.status,
+            "cpu": self.cpu,
+            "memory": self.memory,
+            "image": self.image.id,
+            "id": self.id,
+        }
 
     def __repr__(self):
         return f"Container(status={self.status}, cpu={self.cpu}, memory={self.memory})"
@@ -35,16 +42,26 @@ class Container:
         container_runner = self.container_dir / "run.sh"
         container_runner.chmod(stat.S_IRWXU)
         self.runner = container_runner
+        self.status = "prepared"
         return container_id
 
     def _start(self):
-        subprocess.run(str(self.runner))
+        soft_mem_limit, hard_mem_limit = resource.getrlimit(resource.RLIMIT_AS)
+        soft_cpu_limit, hard_cpu_limit = resource.getrlimit(resource.RLIMIT_CPU)
+
+        resource.setrlimit(resource.RLIMIT_AS, (self.memory, hard_mem_limit))
+        resource.setrlimit(resource.RLIMIT_CPU, (self.cpu, hard_cpu_limit))
+        subprocess.run(self.runner.as_posix())
 
     def start(self):
         mp_context = multiprocessing.get_context("spawn")
         self.process = mp_context.Process(target=self._start)
         self.process.start()
+        self.status = "running"
+        print(self.id, self.status)
 
     def stop(self):
         self.process.terminate()
         shutil.rmtree(self.container_dir)
+        self.status = "stopped"
+        print(self.id, self.status)

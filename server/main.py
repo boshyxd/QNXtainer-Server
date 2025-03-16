@@ -15,6 +15,7 @@ state = Data()
 def upload_image(image_file: Path, image_name: str, image_tag: str = "latest"):
     image = Image(image_name, image_tag)
     image.unpack_from(image_file)
+    state.add_image(image)
 
 
 def start_container(image_name: str, image_tag: str = "latest") -> str:

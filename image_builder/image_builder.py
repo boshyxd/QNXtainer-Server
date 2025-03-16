@@ -50,7 +50,6 @@ def mount_files(image_build_dir: Path, mounted_files: list[str]):
         [src, dest] = mounted_file.split(":")
         src_path = Path(src).absolute().resolve()
         dest_path = image_build_dir / dest
-        print(src_path, dest_path)
         dest_path.parent.mkdir(parents=True, exist_ok=True)
         if src_path.is_dir():
             shutil.copytree(src_path, dest_path, dirs_exist_ok=True)
