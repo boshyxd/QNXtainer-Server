@@ -50,9 +50,9 @@ def start_container(container_id: str) -> str:
         print(f"Container {container_id} is already running")
         return container_id
 
-    container.status = "running"
-    container.cpu = 5
-    container.memory = 64
+    target_container.status = "running"
+    target_container.cpu = 5
+    target_container.memory = 64
 
     if hasattr(target_container, "runner") and target_container.runner:
         target_container.start()
@@ -72,7 +72,7 @@ def stop_container(container_id: str):
         print(f"container {container_id} is already stopped")
         return
 
-    if hasattr(target_container, "process") and container.process:
+    if hasattr(target_container, "process") and target_container.process:
         target_container.stop()
 
     target_container.status = "stopped"
@@ -92,7 +92,9 @@ def create_container(image_id: str, name: str) -> str:
     container.prepare(target_image)
 
     state.add_container(container)
-    print(f"Created container {container.id} from image {image.name}:{image.tag}")
+    print(
+        f"Created container {container.id} from image {target_image.name}:{target_image.tag}"
+    )
 
     return container.id
 
