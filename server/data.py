@@ -6,17 +6,15 @@ import json
 class Data:
     def __init__(
         self,
-        images: list[Image] | None = None,
-        containers: list[Container] | None = None,
     ):
-        self.images = images if images else []
-        self.containers = containers if containers else []
+        self.images = dict()
+        self.containers = dict()
 
     def add_image(self, image: Image):
-        self.images.append(image)
+        self.images[image.id] = image
 
     def add_container(self, container: Container):
-        self.containers.append(container)
+        self.containers[container.id] = container
 
     def to_json(self):
         return json.dumps(

@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 import re
 from datetime import datetime
 
@@ -10,20 +11,23 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 PORT = 8080
 
+state = Data()
+
 cont = Container("Running", 0.2, 25)
 im = Image("x", "y", datetime.today(), "z")
 MOCK_RESPONSE = Data(containers=[cont], images=[im])
 
 
-def upload_image():
+def upload_image(image_file: Path, image_name: str, image_tag: str = "latest"):
+    image = Image(image_name, image_tag)
+    image.unpack_from(image_file)
+
+
+def start_container(image_name: str, image_tag: str = "latest") -> str:
     pass
 
 
-def start_container(image_id):
-    pass
-
-
-def stop_container(image_id):
+def stop_container(container_id: str):
     pass
 
 

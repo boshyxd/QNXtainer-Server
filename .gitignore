@@ -3,3 +3,4 @@ vm/*
 *.out
 .venv
 *.d
+__pycache__
