@@ -11,30 +11,33 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 PORT = 8080
 
 cont = Container("Running", 0.2, 25)
-im = Image("x","y",datetime.today(), "z")
+im = Image("x", "y", datetime.today(), "z")
 MOCK_RESPONSE = Data(containers=[cont], images=[im])
 
 
 def upload_image():
     pass
+
+
 def start_container(image_id):
     pass
+
+
 def stop_container(image_id):
     pass
 
 
 class RequestHandler(BaseHTTPRequestHandler):
-
     def do_GET(self):
         if self.path == "/state" or self.path == "/":
             response_json = json.dumps(MOCK_RESPONSE.to_json()).encode()
             self.send_response(200)
-            self.send_header('Content-type', 'application/json')
+            self.send_header("Content-type", "application/json")
             self.end_headers()
             self.wfile.write(response_json)
         else:
             self.send_response(404)
-            self.send_header('Content-type', 'application/json')
+            self.send_header("Content-type", "application/json")
             self.end_headers()
             self.wfile.write(json.dumps({"error": "Not Found"}).encode())
 
@@ -45,27 +48,28 @@ class RequestHandler(BaseHTTPRequestHandler):
             image_id = self.path.split("/")[-1]
             response_data = {"status": "starting", "image_id": image_id}
         elif re.match(r"^/stop/([\w-]+)$", self.path):
-            container_id = self.path.split("/")[-1] 
+            container_id = self.path.split("/")[-1]
             response_data = {"status": "starting", "image_id": container_id}
         else:
             self.send_response(404)
-            self.send_header('Content-type', 'application/json')
+            self.send_header("Content-type", "application/json")
             self.end_headers()
             self.wfile.write(json.dumps({"error": "Invalid path"}).encode())
             return
         response_json = json.dumps(response_data).encode()
-        
+
         self.send_response(200)
-        self.send_header('Content-type', 'application/json')
+        self.send_header("Content-type", "application/json")
         self.end_headers()
         self.wfile.write(response_json)
 
 
 def run(server_class=HTTPServer, handler_class=RequestHandler):
-    server_address = ('', PORT)
+    server_address = ("", PORT)
     httpd = server_class(server_address, handler_class)
     print(f"http://0.0.0.0:{PORT}")
     httpd.serve_forever()
+
 
 if __name__ == "__main__":
     run()

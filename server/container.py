@@ -1,7 +1,7 @@
 import uuid
 import shutil
 from pathlib import Path
-from .image import Image
+from image import Image
 
 
 class Container:
