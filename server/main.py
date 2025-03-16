@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 import re
 import os
+import socket
 
 from image import Image
 from data import Data
@@ -124,15 +125,28 @@ def ensure_directories():
     print(f"QNXtainer directories initialized at {qnx_dir}")
 
 
+def get_ip_address():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "127.0.0.1"
+
+
 class RequestHandler(BaseHTTPRequestHandler):
+    def log_message(self, format, *args):
+        if args[1].startswith('4') or args[1].startswith('5'):
+            print(f"ERROR: {args[0]} - {args[1]}")
+    
     def do_OPTIONS(self):
-        """Handle preflight CORS requests"""
         self.send_response(200)
         self.send_cors_headers()
         self.end_headers()
     
     def send_cors_headers(self):
-        """Add CORS headers to allow cross-origin requests"""
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
@@ -146,6 +160,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(response_json)
             return
+        
         self.send_response(404)
         self.send_header("Content-type", "application/json")
         self.send_cors_headers()
@@ -166,6 +181,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         
         if self.path == "/upload-image":
             response_data = {"status": "uploaded"}
+        
         elif self.path == "/create-container":
             if "image_id" not in post_json or "name" not in post_json:
                 self.send_response(400)
@@ -185,6 +201,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(json.dumps({"error": str(e)}).encode())
                 return
+        
         elif re.match(r"^/start-from-image/([\w-]+)$", self.path):
             image_id = self.path.split("/")[-1]
             try:
@@ -197,6 +214,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(json.dumps({"error": str(e)}).encode())
                 return
+        
         elif re.match(r"^/start/([\w-]+)$", self.path):
             container_id = self.path.split("/")[-1]
             try:
@@ -209,6 +227,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(json.dumps({"error": str(e)}).encode())
                 return
+        
         elif re.match(r"^/stop/([\w-]+)$", self.path):
             container_id = self.path.split("/")[-1]
             try:
@@ -221,6 +240,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(json.dumps({"error": str(e)}).encode())
                 return
+        
         else:
             self.send_response(404)
             self.send_header("Content-type", "application/json")
@@ -237,11 +257,17 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(response_json)
 
 
-def run(server_class=HTTPServer, handler_class=RequestHandler):
-    server_address = ("", PORT)
+def run(server_class=HTTPServer, handler_class=RequestHandler, port=PORT):
+    server_address = ("", port)
     httpd = server_class(server_address, handler_class)
-    print(f"QNXtainer Server running at http://0.0.0.0:{PORT}")
-    httpd.serve_forever()
+    ip = get_ip_address()
+    print(f"QNXtainer Server running at http://{ip}:{port}")
+    print(f"Connect QNXtainer-Studio to this address")
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        print("\nShutting down QNXtainer Server...")
+        httpd.server_close()
 
 
 if __name__ == "__main__":

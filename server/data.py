@@ -4,9 +4,7 @@ import json
 
 
 class Data:
-    def __init__(
-        self,
-    ):
+    def __init__(self):
         self.images = dict()
         self.containers = dict()
 
@@ -17,9 +15,7 @@ class Data:
     def add_container(self, container: Container):
         self.containers[container.id] = container
 
-    def get_image_by_name(
-        self, image_name: str, image_tag: str = "latest"
-    ) -> Image | None:
+    def get_image_by_name(self, image_name: str, image_tag: str = "latest") -> Image | None:
         return self.images.get(f"{image_name}:{image_tag}", None)
 
     def get_image_by_id(self, image_id: str) -> Image | None:
@@ -27,10 +23,12 @@ class Data:
 
     def to_json(self):
         """Convert data to a JSON-serializable dictionary"""
+        unique_images = {img.id: img for img in self.images.values()}.values()
+        
         return {
-            "images": [img.to_dict() for img in self.images.values()],
+            "images": [img.to_dict() for img in unique_images],
             "containers": [ctr.to_dict() for ctr in self.containers.values()],
         }
 
     def __repr__(self):
-        return f"Data(images={self.images}, containers={self.containers})"
+        return f"Data(images={len(self.images)//2}, containers={len(self.containers)})"
