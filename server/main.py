@@ -114,6 +114,14 @@ def ensure_directories():
 
 
 class RequestHandler(BaseHTTPRequestHandler):
+    def send_error(self, code, message=None):
+        self.send_response(code)
+        self.send_cors_headers()
+        self.send_header("Content-type", "application/json")
+        self.end_headers()
+        error_response = json.dumps({"error": message or "Unknown error"}).encode()
+        self.wfile.write(error_response)
+
     def do_OPTIONS(self):
         """Handle preflight CORS requests"""
         self.send_response(200)
@@ -143,14 +151,14 @@ class RequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         content_length = int(self.headers.get("Content-Length", 0))
-    
+        form = cgi.FieldStorage(fp=self.rfile, headers=self.headers, environ={"REQUEST_METHOD": "POST"})
+        
         if self.path == "/upload-image":
             content_type = self.headers.get("Content-Type")
             if not content_type or "multipart/form-data" not in content_type:
                 self.send_error(400, "Invalid Content-Type")
                 return
 
-            form = cgi.FieldStorage(fp=self.rfile, headers=self.headers, environ={"REQUEST_METHOD": "POST"})
             name = form.getvalue("name")
             if not name:
                 self.send_error(400, "Missing 'name' parameter")
@@ -184,16 +192,9 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps(response_data).encode())
 
         elif self.path == "/create-container":
-            form = cgi.FieldStorage(fp=self.rfile, headers=self.headers, environ={"REQUEST_METHOD": "POST"})
             print(form)
             if not form.getvalue("image_id") or not form.getvalue("name"):
-                self.send_response(400)
-                self.send_header("Content-type", "application/json")
-                self.send_cors_headers()
-                self.end_headers()
-                self.wfile.write(
-                    json.dumps({"error": "Missing image_id or name"}).encode()
-                )
+                self.send_error(400, "Missing image_id or name")
                 return
 
             try:
@@ -202,11 +203,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 )
                 response_data = {"status": "created", "container_id": container_id}
             except ValueError as e:
-                self.send_response(400)
-                self.send_header("Content-type", "application/json")
-                self.send_cors_headers()
-                self.end_headers()
-                self.wfile.write(json.dumps({"error": str(e)}).encode())
+                self.send_error(400, str(e))
                 return
         elif re.match(r"^/start-from-image/([\w-]+)$", self.path):
             image_id = self.path.split("/")[-1]
@@ -222,11 +219,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 start_container(container_id)
                 response_data = {"status": "started", "container_id": container_id}
             except ValueError as e:
-                self.send_response(400)
-                self.send_header("Content-type", "application/json")
-                self.send_cors_headers()
-                self.end_headers()
-                self.wfile.write(json.dumps({"error": str(e)}).encode())
+                self.send_error(400, str(e))
                 return
         elif re.match(r"^/stop/([\w-]+)$", self.path):
             container_id = self.path.split("/")[-1]
@@ -234,18 +227,10 @@ class RequestHandler(BaseHTTPRequestHandler):
                 stop_container(container_id)
                 response_data = {"status": "stopped", "container_id": container_id}
             except ValueError as e:
-                self.send_response(400)
-                self.send_header("Content-type", "application/json")
-                self.send_cors_headers()
-                self.end_headers()
-                self.wfile.write(json.dumps({"error": str(e)}).encode())
+                self.send_error(400, str(e))
                 return
         else:
-            self.send_response(404)
-            self.send_header("Content-type", "application/json")
-            self.send_cors_headers()
-            self.end_headers()
-            self.wfile.write(json.dumps({"error": "Invalid path"}).encode())
+            self.send_error(404, "Invalid path")
             return
 
         response_json = json.dumps(response_data).encode()
