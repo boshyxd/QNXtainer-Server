@@ -69,8 +69,9 @@ class Container:
         soft_mem_limit, hard_mem_limit = resource.getrlimit(resource.RLIMIT_AS)
         soft_cpu_limit, hard_cpu_limit = resource.getrlimit(resource.RLIMIT_CPU)
 
-        resource.setrlimit(resource.RLIMIT_AS, (self.memory, hard_mem_limit))
+        resource.setrlimit(resource.RLIMIT_AS, (self.memory * 1024 * 1024, hard_mem_limit))
         resource.setrlimit(resource.RLIMIT_CPU, (self.cpu, hard_cpu_limit))
+        
         subprocess.run(self.runner.as_posix())
 
     def start(self):
@@ -78,14 +79,17 @@ class Container:
         self.process = mp_context.Process(target=self._start)
         self.process.start()
         self.status = "running"
-        print(self.id, self.status)
+        print(f"Container {self.id} started")
 
     def stop(self):
         if self.process and self.process.is_alive():
             self.process.terminate()
+            self.process.join(timeout=5)
+            if self.process.is_alive():
+                self.process.kill()
         
         if self.container_dir and self.container_dir.exists():
             shutil.rmtree(self.container_dir)
         
         self.status = "stopped"
-        print(self.id, self.status)
+        print(f"Container {self.id} stopped")
