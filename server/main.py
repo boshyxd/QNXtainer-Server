@@ -30,22 +30,23 @@ def start_container(image_name: str, image_tag: str = "latest") -> str:
 def stop_container(container_id: str):
     pass
 
-
 class RequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
-        if self.path == "/state" or self.path == "/":
+        if self.path == "/state":
             response_json = json.dumps(MOCK_RESPONSE.to_json()).encode()
             self.send_response(200)
             self.send_header("Content-type", "application/json")
             self.end_headers()
             self.wfile.write(response_json)
-        else:
-            self.send_response(404)
-            self.send_header("Content-type", "application/json")
-            self.end_headers()
-            self.wfile.write(json.dumps({"error": "Not Found"}).encode())
+            return
+        self.send_response(404)
+        self.send_header('Content-type', 'application/json')
+        self.end_headers()
+        self.wfile.write(json.dumps({"error": "Not Found"}).encode())
 
     def do_POST(self):
+        content_length = int(self.headers.get('Content-Length', 0))
+        post_data = self.rfile.read(content_length)
         if self.path == "/upload-image":
             response_data = {"status": "uploaded"}
         elif re.match(r"^/start/([\w-]+)$", self.path):
