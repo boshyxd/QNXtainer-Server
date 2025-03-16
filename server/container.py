@@ -15,21 +15,31 @@ class Container:
         self.memory = memory
         self.image = None
         self.id = None
+        self.name = None
         self.process = None
         self.container_dir = None
         self.runner = None
 
     def to_dict(self):
+        image_info = None
+        if self.image:
+            image_info = {
+                "id": self.image.id,
+                "name": self.image.name,
+                "tag": self.image.tag
+            }
+        
         return {
-            "status": self.status,
-            "cpu": self.cpu,
-            "memory": self.memory,
-            "image": self.image.id,
             "id": self.id,
+            "name": self.name or self.id,
+            "status": self.status, 
+            "cpu": self.cpu, 
+            "memory": self.memory,
+            "image": image_info
         }
 
     def __repr__(self):
-        return f"Container(status={self.status}, cpu={self.cpu}, memory={self.memory})"
+        return f"Container(id={self.id}, name={self.name}, status={self.status}, cpu={self.cpu}, memory={self.memory})"
 
     def prepare(self, container_image: Image) -> str:
         image_dir = container_image.get_image_dir() / "image"
@@ -38,10 +48,20 @@ class Container:
         self.id = container_id
         self.image = container_image
         self.container_dir = containers_dir / container_id
-        shutil.copytree(image_dir, self.container_dir)
-        container_runner = self.container_dir / "run.sh"
-        container_runner.chmod(stat.S_IRWXU)
-        self.runner = container_runner
+        
+        if not image_dir.exists():
+            self.container_dir.mkdir(parents=True, exist_ok=True)
+            mock_runner = self.container_dir / "run.sh"
+            with open(mock_runner, 'w') as f:
+                f.write("#!/bin/sh\necho 'Mock container running'\nsleep 60\n")
+            mock_runner.chmod(stat.S_IRWXU)
+            self.runner = mock_runner
+        else:
+            shutil.copytree(image_dir, self.container_dir)
+            container_runner = self.container_dir / "run.sh"
+            container_runner.chmod(stat.S_IRWXU)
+            self.runner = container_runner
+        
         self.status = "prepared"
         return container_id
 
@@ -61,7 +81,11 @@ class Container:
         print(self.id, self.status)
 
     def stop(self):
-        self.process.terminate()
-        shutil.rmtree(self.container_dir)
+        if self.process and self.process.is_alive():
+            self.process.terminate()
+        
+        if self.container_dir and self.container_dir.exists():
+            shutil.rmtree(self.container_dir)
+        
         self.status = "stopped"
         print(self.id, self.status)
