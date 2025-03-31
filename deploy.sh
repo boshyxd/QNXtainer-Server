@@ -1,2 +1,2 @@
-scp -r server qnxuser@192.168.222.110:server
-ssh -v qnxuser@192.168.222.110
+scp server/* qnxuser@192.168.222.110:/data/home/qnxuser/server
+ssh qnxuser@192.168.222.110

@@ -1,6 +1,5 @@
 import json
 import logging
-import time
 from pathlib import Path
 import re
 import os
@@ -103,7 +102,9 @@ def create_container(image_id: str, name: str) -> str:
     container.prepare(target_image)
 
     state.add_container(container)
-    print(f"Created container {container.id} from image {image.name}:{image.tag}")
+    print(
+        f"Created container {container.id} from image {target_image.name}:{target_image.tag}"
+    )
 
     return container.id
 
@@ -273,18 +274,4 @@ def run(server_class=ThreadedSimpleServer, handler_class=RequestHandler):
 
 if __name__ == "__main__":
     ensure_directories()
-
-    mock_image_path = Path().home() / ".qnxtainer" / "images" / "mock-app.tar.gz"
-    if mock_image_path.exists():
-        upload_image(mock_image_path, "mock-app")
-        image = state.get_image_by_name("mock-app")
-        container_id = start_container_from_image(image.id)
-        time.sleep(1)
-        stop_container(container_id)
-    else:
-        print(f"Mock image not found at {mock_image_path}. Starting with empty state.")
-        mock_image = Image("mock-app", "latest")
-        state.add_image(mock_image)
-        print("Added mock image to state.")
-
     run()
